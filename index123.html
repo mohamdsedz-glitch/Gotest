@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>smothe cafee - Smart Menu & Order Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        themeTurquoise: '#00a896', // Matching cyan/turquoise from screenshots
+                        themeTurquoiseLight: '#e6f7f5',
+                        themeDark: '#0c3c46',
+                        themeRed: '#e53e3e',
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #ffffff;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-none {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        @keyframes pulseGlowRed {
+            0%, 100% { box-shadow: 0 0 20px rgba(229, 62, 62, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 45px rgba(229, 62, 62, 0.85); transform: scale(1.04); }
+        }
+        .pulse-red {
+            animation: pulseGlowRed 1.2s infinite ease-in-out;
+        }
+        @keyframes pulseGlowCyan {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 168, 150, 0.3); transform: scale(1); }
+            50% { box-shadow: 0 0 35px rgba(0, 168, 150, 0.6); transform: scale(1.02); }
+        }
+        .pulse-cyan {
+            animation: pulseGlowCyan 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen pb-28">
+
+    <!-- TOP SYSTEM CONTROL TABS (HEADER SWITCHER FOR TESTING) -->
+    <div class="bg-slate-50 border-b border-slate-200 py-1.5 px-4 flex items-center justify-between text-xs font-bold text-slate-500">
+        <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-themeTurquoise"></span>
+            <span class="text-slate-800 font-extrabold">smothe cafee</span>
+        </div>
+        <div class="flex items-center gap-1 bg-slate-200 p-1 rounded-lg text-[11px]">
+            <button onclick="switchTab('menu')" id="btn-tab-menu" class="px-2 py-0.5 rounded bg-white text-slate-800 font-bold shadow-xs">القائمة</button>
+            <button onclick="switchTab('tracker')" id="btn-tab-tracker" class="px-2 py-0.5 rounded hover:text-slate-800">التتبع</button>
+            <button onclick="switchTab('barista')" id="btn-tab-barista" class="px-2 py-0.5 rounded hover:text-slate-800">الباريستا</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-md mx-auto px-4 pt-3">
+
+        <!-- ================= SECTION 1: MAIN MENU (MATCHING IMAGES 12 & 13) ================= -->
+        <section id="sec-menu" class="space-y-4">
+            
+            <!-- Header (Cafe Title + Table Tag) -->
+            <div class="flex items-start justify-between">
+                <div>
+                    <h1 class="text-2xl font-black text-slate-900 flex items-center gap-2">
+                        كافيه smothe <span class="text-xl">☕</span>
+                    </h1>
+                    <p class="text-xs font-semibold text-slate-400 mt-0.5">أهلاً بك! اختر مشروبك المفضل</p>
+                </div>
+                <!-- Table Tag Button -->
+                <button onclick="openTableModal()" class="bg-teal-50 border border-teal-100 text-themeTurquoise font-bold text-xs px-3 py-1.5 rounded-full flex items-center gap-1 shadow-xs hover:bg-teal-100 transition">
+                    <span>📍 طاولة: <strong id="current-table-num" class="text-slate-900 font-black">5</strong></span>
+                    <span class="text-[10px] text-themeTurquoise font-normal">(تغيير)</span>
+                </button>
+            </div>
+
+            <!-- Categories Horizontal Scroll -->
+            <div class="flex items-center gap-2 overflow-x-auto pt-1 pb-1 scrollbar-none">
+                <button onclick="filterCategory('all')" class="cat-btn active px-4 py-1.5 rounded-xl bg-themeTurquoise text-white font-bold text-xs whitespace-nowrap shadow-xs">
+                    الكل
+                </button>
+                <button onclick="filterCategory('hot')" class="cat-btn px-4 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs whitespace-nowrap hover:bg-slate-200 transition">
+                    ☕ قهوة ساخنة
+                </button>
+                <button onclick="filterCategory('cold')" class="cat-btn px-4 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs whitespace-nowrap hover:bg-slate-200 transition">
+                    🧊 بارد وممتع
+                </button>
+                <button onclick="filterCategory('sweets')" class="cat-btn px-4 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs whitespace-nowrap hover:bg-slate-200 transition">
+                    🍰 حلويات
+                </button>
+            </div>
+
+            <!-- Horizontal Product Cards -->
+            <div class="space-y-3" id="products-grid">
+                <!-- Dynamically Rendered -->
+            </div>
+
+            <!-- Floating Action Download Location Button (Matching Bottom Left Teal Circle in Images) -->
+            <div class="fixed bottom-24 left-4 z-30">
+                <button class="w-16 h-16 bg-themeTurquoise text-white rounded-full shadow-xl flex flex-col items-center justify-center text-center leading-tight hover:scale-105 transition active:scale-95">
+                    <i class="fa-solid fa-download text-sm mb-0.5"></i>
+                    <span class="text-[9px] font-bold leading-tight">تحميل<br>الموقع</span>
+                </button>
+            </div>
+
+            <!-- Bottom Floating Order Checkout Bar (Matching Image 12) -->
+            <div id="checkout-bar" class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-200 p-3 flex items-center justify-between z-40 shadow-lg transition-all transform translate-y-32">
+                <button onclick="submitOrder()" class="px-6 py-2.5 bg-themeTurquoise hover:bg-teal-600 text-white font-black rounded-xl text-sm transition flex items-center gap-2 shadow-xs">
+                    <i class="fa-solid fa-arrow-right text-xs"></i> تأكيد الطلب
+                </button>
+                <div class="text-left">
+                    <div id="cart-summary-text" class="text-[11px] text-slate-400 font-bold">المجموع (0 أصناف)</div>
+                    <div id="cart-total-price" class="text-base font-black text-themeTurquoise">0.00 د.أ</div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= SECTION 2: TRACKER PAGE (MATCHING IMAGES 10 & 11) ================= -->
+        <section id="sec-tracker" class="hidden min-h-[80vh] flex flex-col items-center justify-center text-center py-6 space-y-6">
+            
+            <div class="space-y-1">
+                <p class="text-xs font-bold text-slate-400">طاولة رقم: <span id="tracker-table-num" class="text-slate-700">5</span></p>
+                <h2 class="text-xl font-black text-slate-800">تتبع حالة طلبك</h2>
+            </div>
+
+            <!-- Circle Status (Interactive Switch between Image 10 & Image 11) -->
+            <div class="my-6">
+                <div id="tracker-circle" class="w-64 h-64 mx-auto rounded-full bg-themeTurquoise pulse-cyan flex items-center justify-center text-white font-black text-2xl shadow-2xl transition-all duration-500">
+                    قيد التنفيذ
+                </div>
+            </div>
+
+            <p id="tracker-subtext" class="text-xs font-bold text-slate-400">تتحدث الحالة تلقائياً، لا تغلق هذه الصفحة</p>
+
+            <!-- Test Switcher Ready Button (Matching Images 10 & 11) -->
+            <div class="pt-2 space-y-3">
+                <button onclick="toggleOrderStatusReady()" class="px-6 py-2 border-2 border-dashed border-slate-300 rounded-2xl text-xs font-bold text-slate-400 hover:border-themeTurquoise hover:text-themeTurquoise transition">
+                    تجربة: اجعل الطلب جاهزاً
+                </button>
+                <div>
+                    <button onclick="switchTab('menu')" class="text-xs font-bold text-slate-400 underline hover:text-slate-600">
+                        العودة للقائمة
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= SECTION 3: BARISTA DASHBOARD ================= -->
+        <section id="sec-barista" class="hidden space-y-4">
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-black text-slate-800">شاشة الباريستا</h2>
+                    <p class="text-xs text-slate-400">إدارة الطلبات المباشرة</p>
+                </div>
+                <button onclick="addDemoOrder()" class="px-3 py-1.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900 transition">
+                    + طلب تجريبي
+                </button>
+            </div>
+
+            <div id="barista-orders" class="space-y-3">
+                <!-- Barista cards -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODAL 1: INITIAL TABLE SELECTION (MATCHING IMAGE 14) ================= -->
+    <div id="welcome-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl border border-slate-100 space-y-4">
+            
+            <!-- Top Circle Icon -->
+            <div class="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center text-2xl mx-auto border border-teal-100">
+                ☕
+            </div>
+
+            <div class="space-y-1">
+                <h3 class="text-2xl font-black text-slate-900">أهلاً بك!</h3>
+                <p class="text-xs font-semibold text-slate-400 leading-relaxed px-2">
+                    يرجى إدخال رقم الطاولة المكتوب على الستاند للبدء
+                </p>
+            </div>
+
+            <!-- Table Input -->
+            <div class="relative">
+                <input type="number" id="welcome-input-table" value="5" min="1" max="99" class="w-full text-center text-xl font-bold p-3 border-2 border-themeTurquoise rounded-2xl text-slate-700 focus:outline-none placeholder-slate-300" placeholder="مثلاً: 5">
+            </div>
+
+            <!-- Quick Table Selector Buttons -->
+            <div class="grid grid-cols-4 gap-2 pt-1">
+                <button onclick="setWelcomeTable(1)" class="py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100">1</button>
+                <button onclick="setWelcomeTable(2)" class="py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100">2</button>
+                <button onclick="setWelcomeTable(3)" class="py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100">3</button>
+                <button onclick="setWelcomeTable(4)" class="py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100">4</button>
+            </div>
+
+            <!-- Confirm Button -->
+            <button onclick="confirmWelcomeTable()" class="w-full py-3 bg-themeTurquoise hover:bg-teal-600 text-white font-black rounded-2xl text-sm transition shadow-md flex items-center justify-center gap-2">
+                تأكيد وابدأ الطلب 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= MODAL 2: ORDER SENT CONFIRMATION (MATCHING IMAGE 9) ================= -->
+    <div id="sent-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl border border-slate-100 space-y-4">
+            
+            <!-- Checkmark Circle -->
+            <div class="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center text-2xl text-themeTurquoise mx-auto border border-teal-100">
+                <i class="fa-solid fa-check"></i>
+            </div>
+
+            <div class="space-y-0.5">
+                <h3 class="text-2xl font-black text-slate-900">تم إرسال الطلب!</h3>
+                <p class="text-xs font-bold text-slate-400">رقم الطاولة: <span id="sent-table-num" class="text-slate-700">5</span></p>
+            </div>
+
+            <!-- Light Cyan Instruction Box -->
+            <div class="bg-teal-50/70 border border-teal-100 rounded-2xl p-3.5 text-right space-y-1">
+                <div class="font-extrabold text-xs text-teal-900 flex items-center gap-1.5">
+                    💳 الخطوة التالية: المحاسبة
+                </div>
+                <p class="text-[11px] text-teal-800/80 font-medium leading-relaxed">
+                    يرجى التوجه إلى الكاشير للمحاسبة على طلبك، ثم اضغط <strong class="text-teal-950 font-bold">تتبع حالة الطلب</strong> لتعرف متى يصبح طلبك جاهزاً.
+                </p>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="space-y-2 pt-1">
+                <button onclick="goToTrackerFromModal()" class="w-full py-3 bg-themeTurquoise hover:bg-teal-600 text-white font-black rounded-xl text-xs transition shadow-xs">
+                    تتبع حالة الطلب
+                </button>
+                <button onclick="closeSentModal()" class="w-full py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition">
+                    فهمت ذلك، إغلاق
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================= MODAL 3: TABLE CHANGE ================= -->
+    <div id="table-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-xl border border-slate-200 space-y-4">
+            <h3 class="text-base font-bold text-slate-800">تغيير رقم الطاولة</h3>
+            <input type="number" id="input-table-num" value="5" min="1" max="99" class="w-full text-center text-2xl font-black p-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-themeTurquoise text-slate-800">
+            <div class="flex items-center gap-2 pt-1">
+                <button onclick="saveTableNum()" class="flex-1 py-2 bg-themeTurquoise hover:bg-teal-600 text-white font-bold rounded-xl text-xs transition">حفظ</button>
+                <button onclick="closeTableModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const products = [
+            { 
+                id: 1, 
+                name: "سبانيش لاتيه", 
+                desc: "إسبريسو غني مع حليب مبخر ومكثف", 
+                category: "hot", 
+                price: 3.50, 
+                img: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=300&auto=format&fit=crop&q=80" 
+            },
+            { 
+                id: 2, 
+                name: "فلات وايت", 
+                desc: "مزيج رائع بين الإسبريسو وطبقة الحليب الناعمة", 
+                category: "hot", 
+                price: 2.75, 
+                img: "https://images.unsplash.com/photo-1534778101976-62847782c213?w=300&auto=format&fit=crop&q=80" 
+            },
+            { 
+                id: 3, 
+                name: "آيس كراميل ماكياتو", 
+                desc: "قهوة باردة مع صلصة الكراميل والحليب", 
+                category: "cold", 
+                price: 3.75, 
+                img: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=300&auto=format&fit=crop&q=80" 
+            },
+            { 
+                id: 4, 
+                name: "تشيز كيك التوت", 
+                desc: "شريحة تشيز كيك غنية بطبقة التوت", 
+                category: "sweets", 
+                price: 4.00, 
+                img: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=300&auto=format&fit=crop&q=80" 
+            },
+        ];
+
+        let currentTable = 5;
+        let cart = {}; // { productId: count }
+        let baristaOrders = [];
+        let isReady = false;
+
+        window.onload = function() {
+            renderProducts(products);
+            renderBaristaOrders();
+        };
+
+        // Tab Navigation
+        function switchTab(tab) {
+            document.getElementById('sec-menu').classList.add('hidden');
+            document.getElementById('sec-tracker').classList.add('hidden');
+            document.getElementById('sec-barista').classList.add('hidden');
+
+            document.getElementById('btn-tab-menu').className = "px-2 py-0.5 rounded hover:text-slate-800";
+            document.getElementById('btn-tab-tracker').className = "px-2 py-0.5 rounded hover:text-slate-800";
+            document.getElementById('btn-tab-barista').className = "px-2 py-0.5 rounded hover:text-slate-800";
+
+            if(tab === 'menu') {
+                document.getElementById('sec-menu').classList.remove('hidden');
+                document.getElementById('btn-tab-menu').className = "px-2 py-0.5 rounded bg-white text-slate-800 font-bold shadow-xs";
+            } else if(tab === 'tracker') {
+                document.getElementById('sec-tracker').classList.remove('hidden');
+                document.getElementById('btn-tab-tracker').className = "px-2 py-0.5 rounded bg-white text-slate-800 font-bold shadow-xs";
+            } else if(tab === 'barista') {
+                document.getElementById('sec-barista').classList.remove('hidden');
+                document.getElementById('btn-tab-barista').className = "px-2 py-0.5 rounded bg-white text-slate-800 font-bold shadow-xs";
+            }
+        }
+
+        // Welcome Modal Functions
+        function setWelcomeTable(num) {
+            document.getElementById('welcome-input-table').value = num;
+        }
+        function confirmWelcomeTable() {
+            const val = document.getElementById('welcome-input-table').value || 5;
+            currentTable = val;
+            document.getElementById('current-table-num').innerText = val;
+            document.getElementById('tracker-table-num').innerText = val;
+            document.getElementById('sent-table-num').innerText = val;
+            document.getElementById('welcome-modal').classList.add('hidden');
+        }
+
+        // Render Products with +/- controls inside card (Matching Images 12 & 13)
+        function renderProducts(items) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = items.map(p => {
+                const count = cart[p.id] || 0;
+                
+                // Action Controls on the Left
+                let actionBtnHTML = '';
+                if(count > 0) {
+                    actionBtnHTML = `
+                        <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                            <button onclick="decreaseCart(${p.id})" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 font-black flex items-center justify-center hover:bg-slate-100">
+                                -
+                            </button>
+                            <span class="font-black text-sm text-slate-800 px-1">${count}</span>
+                            <button onclick="increaseCart(${p.id})" class="w-8 h-8 rounded-lg bg-themeTurquoise text-white font-black flex items-center justify-center hover:bg-teal-600">
+                                +
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    actionBtnHTML = `
+                        <button onclick="increaseCart(${p.id})" class="w-10 h-10 rounded-xl bg-teal-50 hover:bg-themeTurquoise text-themeTurquoise hover:text-white font-black flex items-center justify-center transition shrink-0">
+                            <i class="fa-solid fa-plus text-sm"></i>
+                        </button>
+                    `;
+                }
+
+                return `
+                    <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs flex items-center justify-between gap-3 hover:border-teal-200 transition">
+                        
+                        <!-- Action Button / Controls (Far Right in RTL) -->
+                        <div>
+                            ${actionBtnHTML}
+                        </div>
+
+                        <!-- Product Content (Middle) -->
+                        <div class="flex-1 text-right">
+                            <h3 class="font-extrabold text-slate-800 text-sm leading-snug">${p.name}</h3>
+                            <p class="text-[11px] text-slate-400 font-medium leading-relaxed mt-0.5 line-clamp-2">${p.desc}</p>
+                            <p class="text-themeTurquoise font-black text-xs mt-1">${p.price.toFixed(2)} د.أ</p>
+                        </div>
+
+                        <!-- Image (Far Left in RTL) -->
+                        <img src="${p.img}" alt="${p.name}" class="w-20 h-20 object-cover rounded-xl shrink-0 shadow-xs">
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterCategory(cat) {
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs whitespace-nowrap hover:bg-slate-200 transition";
+            });
+            event.target.className = "cat-btn active px-4 py-1.5 rounded-xl bg-themeTurquoise text-white font-bold text-xs whitespace-nowrap shadow-xs";
+
+            if (cat === 'all') renderProducts(products);
+            else renderProducts(products.filter(p => p.category === cat));
+        }
+
+        // Cart Logic
+        function increaseCart(id) {
+            cart[id] = (cart[id] || 0) + 1;
+            updateCartUI();
+            renderProducts(products);
+        }
+
+        function decreaseCart(id) {
+            if(cart[id]) {
+                cart[id]--;
+                if(cart[id] <= 0) delete cart[id];
+            }
+            updateCartUI();
+            renderProducts(products);
+        }
+
+        function updateCartUI() {
+            let totalItems = 0;
+            let totalPrice = 0;
+
+            for(let id in cart) {
+                const prod = products.find(p => p.id == id);
+                totalItems += cart[id];
+                totalPrice += prod.price * cart[id];
+            }
+
+            const bar = document.getElementById('checkout-bar');
+            document.getElementById('cart-summary-text').innerText = `المجموع (${totalItems} أصناف)`;
+            document.getElementById('cart-total-price').innerText = totalPrice.toFixed(2) + " د.أ";
+
+            if(totalItems > 0) {
+                bar.classList.remove('translate-y-32');
+            } else {
+                bar.classList.add('translate-y-32');
+            }
+        }
+
+        // Submit Order -> Show Modal Image 9
+        function submitOrder() {
+            document.getElementById('sent-modal').classList.remove('hidden');
+        }
+
+        function closeSentModal() {
+            document.getElementById('sent-modal').classList.add('hidden');
+        }
+
+        function goToTrackerFromModal() {
+            closeSentModal();
+            cart = {};
+            updateCartUI();
+            renderProducts(products);
+            switchTab('tracker');
+        }
+
+        // Tracker Toggle Logic (Image 10 vs Image 11)
+        let alertInterval = null;
+        let audioCtx = null;
+
+        function playPagerBeep() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 880 Hz beep sound
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            } catch (e) {
+                console.log("Audio play error", e);
+            }
+        }
+
+        function stopAlerts() {
+            if (alertInterval) {
+                clearInterval(alertInterval);
+                alertInterval = null;
+            }
+            if ("vibrate" in navigator) {
+                navigator.vibrate(0);
+            }
+        }
+
+        function start30SecAlert() {
+            stopAlerts(); // clear existing
+            let startTime = Date.now();
+            
+            // Play initial beep
+            playPagerBeep();
+            if ("vibrate" in navigator) {
+                navigator.vibrate([400, 200, 400, 200]);
+            }
+
+            // Loop beep & vibration for 30 seconds
+            alertInterval = setInterval(() => {
+                let elapsed = Date.now() - startTime;
+                if (elapsed >= 30000) { // 30 seconds reached
+                    stopAlerts();
+                    return;
+                }
+                playPagerBeep();
+                if ("vibrate" in navigator) {
+                    navigator.vibrate([400, 200]);
+                }
+            }, 1000);
+        }
+
+        function toggleOrderStatusReady() {
+            isReady = !isReady;
+            const circle = document.getElementById('tracker-circle');
+            const subtext = document.getElementById('tracker-subtext');
+
+            if(isReady) {
+                circle.innerText = "طلبك جاهز";
+                circle.className = "w-64 h-64 mx-auto rounded-full bg-themeRed pulse-red flex items-center justify-center text-white font-black text-3xl shadow-2xl transition-all duration-500 cursor-pointer";
+                subtext.innerHTML = `
+                    <div class="space-y-2">
+                        <p class="text-xs font-bold text-slate-500">تفضل باستلام طلبك</p>
+                        <button onclick="stopAlerts(); this.innerText='تم إيقاف الرنين ✓';" class="px-4 py-1.5 bg-red-100 text-red-600 rounded-full font-bold text-xs shadow-xs hover:bg-red-200 transition">
+                            🔔 إيقاف صوت التنبيه (30 ثانية)
+                        </button>
+                    </div>
+                `;
+                
+                // Start 30 seconds audio beep & vibration alarm
+                start30SecAlert();
+            } else {
+                stopAlerts();
+                circle.innerText = "قيد التنفيذ";
+                circle.className = "w-64 h-64 mx-auto rounded-full bg-themeTurquoise pulse-cyan flex items-center justify-center text-white font-black text-2xl shadow-2xl transition-all duration-500";
+                subtext.innerText = "تتحدث الحالة تلقائياً، لا تغلق هذه الصفحة";
+            }
+        }
+
+        // Table Change Dialog
+        function openTableModal() { document.getElementById('table-modal').classList.remove('hidden'); }
+        function closeTableModal() { document.getElementById('table-modal').classList.add('hidden'); }
+        function saveTableNum() {
+            const val = document.getElementById('input-table-num').value;
+            if(val) {
+                currentTable = val;
+                document.getElementById('current-table-num').innerText = val;
+                document.getElementById('tracker-table-num').innerText = val;
+                document.getElementById('sent-table-num').innerText = val;
+                closeTableModal();
+            }
+        }
+
+        // Barista
+        function renderBaristaOrders() {
+            const container = document.getElementById('barista-orders');
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2 shadow-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="font-extrabold text-sm text-slate-800">طاولة #5</span>
+                        <span class="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">قيد التحضير</span>
+                    </div>
+                    <p class="text-xs text-slate-500">سبانيش لاتيه × 1، فلات وايت × 1</p>
+                    <button onclick="toggleOrderStatusReady(); switchTab('tracker');" class="w-full py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition">
+                        تغيير الحالة إلى جاهز
+                    </button>
+                </div>
+            `;
+        }
+
+        function addDemoOrder() {
+            renderBaristaOrders();
+        }
+    </script>
+</body>
+</html>
